@@ -1,0 +1,2 @@
+ship.hg22N09 <- read.table("C:/Users/mupraw/Documents/PhD/DATA/ship.hg22N09.new.csv", sep =",", row.names =  NULL, header = TRUE)
+ship.hg22N09$time.stamp <- as.POSIXct(ship.hg22N09$time.stamp, format = "%Y-%m-%d %H:%M:%S", tz = "Europe/Tallinn")

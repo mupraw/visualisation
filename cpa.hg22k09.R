@@ -1,0 +1,2 @@
+cpa.hg22k09 <- read.table("C:/Users/mupraw/Documents/PhD/DATA/cpa.hg22k09.new.csv", sep =",", row.names =  NULL, header = TRUE)
+cpa.hg22k09$time.stamp <- as.POSIXct(cpa.hg22k09$time.stamp, format = "%Y-%m-%d %H:%M:%S", tz = "Europe/Tallinn")
