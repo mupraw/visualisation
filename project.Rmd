@@ -1,0 +1,183 @@
+---
+title: "Data Processing and Visualization"
+output:
+  html_document:
+    df_print: paged
+---
+
+Before execute the code, please load these following libraries
+
+```{r message=FALSE}
+library(easypackages)
+libraries("xlsx",   "ggplot2", "TrackReconstruction", "optimbase", "data.table",
+          "plotly", "ggpubr","dplyr", "spacetime", "plotly", "viridis", "RColorBrewer", 
+          "ggsci", "rgdal", "ggmap", "xts","readxl","sp",
+          "gstat","automap","grDevices","gstat","devtools","ggbiplot",
+          "factoextra","cluster","clustertend","mclust", "bcpa", "ggsn")
+          
+
+
+
+```
+
+
+# OBJECTIVE
+
+Objective of this mini article is to find the impact of  anthropogenic noise on ringed seal.The highest sound exposure level received by ringed seal is when the distance from seal to ship is minimum. Analysis were carried out by comparing pattern of dive duration / surf duration before and after shortest distance to the ships. Whenever the pattern was changed, it means seal reacted to ship noise.  
+
+##Study location
+Location of study was in Moonsund, West Coast of Estonia. There was ferry lane connecting Virtsu and Kuivatsu. Ringed seals were known to cross the ferry lane. The map of object study is shown below.
+
+```{r fig.cap = "Study location. Red color shows the ferry lane ", warning=FALSE}
+map <-ggmap(get_googlemap(center = c(dep_lon = 23.46306, dep_lat = 58.57),
+                    zoom = 12, scale = 2,
+                    maptype ='terrain'
+))
+
+map  + geom_segment(aes(x=23.396960, xend =23.506508, y = 58.573697, yend =58.576921), color= "red")
+
+
+```
+
+
+# DATA UNDERSTANDING
+
+## Seal data
+
+Description about variables in seal movement data can be accessed  [here](http://www.smru.st-andrews.ac.uk/protected/specs/DatabaseFieldDescriptions.pdf)
+
+## AIS data
+Information about unit and variables description relates with AIS are provided [here](https://portal.helcom.fi/meetings/AIS%20EWG%2027-2016-290/MeetingDocuments/4-1-Rev1%20Draft%20HELCOM%20guidance%20regarding%20best%20practices%20in%20data%20handling%20and%20definitions%20of%20certain%20AIS%20data%20products.pdf)
+
+
+## Time conversion
+
+Time zone of available data either ringed seals dive and ships locations data are in UTC. The set and rise of the sun certainly follows the local time zone which impacting to seal diurnal activities. Therefore time zone has to be converted into local time. Two time differences refer to UTC are applied in the location since DST ends some time before winter. Local times are expressed in two term Eastern European Summer Time (EEST) and Eastern European Time (EET). No further time adjustment for seals data required. 
+```{r}
+library(xlsx)
+
+source("C:/Users/mupraw/Documents/R/specify_decimal.R")
+source("C:/Users/mupraw/Documents/R/time_conversion_dive.R")
+source("C:/Users/mupraw/Documents/R/ais.conv.R")
+
+head(dive,10)
+tail(dive,10)
+head(AIS,10)
+
+```
+
+
+## Filter seal data
+
+Seal data are filtered based on geographic coordinate of study location Moonsund, West Coast of Estonia (latitude 58.55-58.59). There were three tagged seals in this study. Thus, all seal data are saved with their individual names in the last file names.
+
+```{r}
+source("C:/Users/mupraw/Documents/R/dive.time.hg22P09.R")
+source("C:/Users/mupraw/Documents/R/dive.time.hg22N09.R")
+source("C:/Users/mupraw/Documents/R/dive.time.hg22k09.R")
+
+head(dive.time.hg22P09,10)
+head(dive.time.hg22k09,10)
+head(dive.time.hg22N09,10)
+
+```
+
+
+## Re-assembly seal data 
+
+The output of this process is to provide a ready-to-use data for illustrating dive profiles. Description of evolving of data structure is as follow: initially a row describes a single dive then single dive is expanded into several rows. Each rows represent current condition of seal based on percentage of dive duration. Also, the seal current status (diving or surfacing) is also added. Figure of dive profiles are created using geom_segment therefore it requires starting and ending points. Information about the estimated bathymetry is available only on study location. Seabed in other locations is NA.  All data are saved separatedly based on seal's names.
+
+```{r}
+
+source("C:/Users/mupraw/Documents/R/segmentForFigure.R")
+source("C:/Users/mupraw/Documents/R/dive.depth.hg22P09.R")
+source("C:/Users/mupraw/Documents/R/dive.depth.hg22N09.R")
+source("C:/Users/mupraw/Documents/R/dive.depth.hg22k09.R")
+
+dive.depth.hg22P09 <- segmentForFigure(dive.depth.hg22P09,dive.time.hg22P09)
+dive.depth.hg22N09 <- segmentForFigure(dive.depth.hg22N09,dive.time.hg22N09)
+dive.depth.hg22k09 <- segmentForFigure(dive.depth.hg22k09,dive.time.hg22k09)
+
+dive.depth.hg22P09[5000:5010,]
+dive.depth.hg22N09[5000:5010,]
+dive.depth.hg22k09[5000:5010,]
+
+```
+
+## Calculate distances from seals to ships
+
+Ships data are filtered based on geographical locations and period of seal crossing the ferry lane. Impact of anthropogenic noise is analyzed based on shortest distance from ship to seal. Distances from ship to seal are provided below
+
+```{r}
+
+source("C:/Users/mupraw/Documents/R/ship.hg22P09.R")
+source("C:/Users/mupraw/Documents/R/ship.hg22N09.R")
+source("C:/Users/mupraw/Documents/R/ship.hg22k09.R")
+source("C:/Users/mupraw/Documents/R/dive.hg22P09.R")
+source("C:/Users/mupraw/Documents/R/dive.hg22N09.R")
+source("C:/Users/mupraw/Documents/R/dive.hg22k09.R")
+source("C:/Users/mupraw/Documents/R/cpa.R")
+
+
+cpa.hg22P09 <-cpa(ship.hg22P09,dive.hg22P09)
+cpa.hg22N09 <-cpa(ship.hg22N09,dive.hg22N09)
+cpa.hg22k09 <-cpa(ship.hg22k09,dive.hg22k09)
+
+head(cpa.hg22N09,10)
+head(cpa.hg22P09,10)
+head(cpa.hg22k09,10)
+
+```
+
+## Statistics of ringed seals crossing
+
+Altogether, there were 36 of ringed seal crossing the ferry lane. Information about shortest distances of the seal to ship are presented below.  
+```{r fig.cap = "Closest point of approach for each events"}
+source("C:/Users/mupraw/Documents/R/dive.time.hg22P09.R")
+source("C:/Users/mupraw/Documents/R/dive.time.hg22N09.R")
+source("C:/Users/mupraw/Documents/R/dive.time.hg22k09.R")
+source("C:/Users/mupraw/Documents/R/cpa.hg22P09.R")
+source("C:/Users/mupraw/Documents/R/cpa.hg22N09.R")
+source("C:/Users/mupraw/Documents/R/cpa.hg22k09.R")
+source("C:/Users/mupraw/Documents/R/shipApproach.R")
+
+ship_app <- shipApproach(dive.time.hg22k09,dive.time.hg22N09,dive.time.hg22P09,cpa.hg22k09,cpa.hg22N09,cpa.hg22P09)
+
+closest <- ggplot(data= ship_app, aes(grup,dist.km, fill= name)) +
+  geom_bar(position = "dodge",stat="identity", width = 0.2) +
+  xlab(expression(paste(i^{th}," event"))) +
+  ylab("Closest point of approach [m]") +
+  scale_fill_manual(values = c("firebrick1","deepskyblue", "darkorange1", "green", "darkorchid1", "gold"))
+
+closest
+
+```
+
+
+
+
+# DIVE PROFILES
+
+Figures show the relation between dive profile and ships distances to seal. The expectation of normal diving behaviour of ringed seal should have almost regular dive duration or surface duration. As the presence of anthropogenic noise at the strongest SEL (at CPA), the reaction of ringed seal is analyzed. The changes in dive pattern indicate the ringed seal is disturbed by anthropogenic noise.    
+```{r fig.cap = "hg22P09", warning=FALSE}
+source("C:/Users/mupraw/Documents/R/figProfileCpa.R")
+figProfileCpa(dive.depth.hg22P09,cpa.hg22P09,dive.time.hg22P09)
+```
+
+Figures show the relation between dive profile and ships distances to seal. The seal name is hg22N09
+```{r fig.cap = "hg22N09", warning=FALSE}
+figProfileCpa(dive.depth.hg22N09,cpa.hg22N09,dive.time.hg22N09)
+```
+
+The seal name is hg22N09
+```{r fig.cap = "hg22k09", warning=FALSE}
+
+figProfileCpa(dive.depth.hg22k09,cpa.hg22k09,dive.time.hg22k09)
+```
+
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
